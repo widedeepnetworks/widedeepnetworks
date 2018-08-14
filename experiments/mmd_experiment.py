@@ -1,9 +1,24 @@
+# Copyright 2018 Alexander Matthews
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sys
 sys.path.append('../')
 import itertools
 
 from IPython import embed
 
+import sys
 import pickle
 import numpy as np
 import torch
@@ -15,10 +30,10 @@ import mmd
 import shared
 import defaults
 
-results_file_name = 'results/mmd.pickle'
+results_file_stub = 'results/mmd'
 
 #@profile
-def mmd_experiments():
+def mmd_experiments(width_class):
     
     torch.manual_seed(3)
     torch.set_num_threads(1)
@@ -30,9 +45,10 @@ def mmd_experiments():
     extra_variance = 1e-3 #for numerical stability of multivariate normal.
 
     #long params
-    hidden_unit_numbers = [1,2,3,4,5,6,7,8,9,10,15,20,30,40,50,75,100]
+    hidden_unit_numbers = [1,2,3,4,5,6,7,8,9,10,15,20,30,40,50,75,100,250,500]
+    
     hidden_layer_numbers = [1,2,3]
-    num_repeats = 20
+    num_repeats = 100
     num_callibration_repeats = 50
     
     num_function_samples = 2000
@@ -66,18 +82,19 @@ def mmd_experiments():
             for repeat_index in range(num_repeats):
                 nn_samples = np.zeros( (num_function_samples, num_data_points ))
                 for sample_index in range(num_function_samples):
-                    nn_model = shared.get_nn_model( input_dim, hidden_units, output_dim, hidden_layers)
+                    nn_model = shared.get_nn_model( input_dim, hidden_units, output_dim, hidden_layers, width_class)
                     nn_sample = nn_model( X_input_torch ).data.numpy().flatten()
                     noise_sample = rng.randn( *nn_sample.shape )*np.sqrt(extra_variance)# for consistency with GP whitening.
                     nn_samples[sample_index,:] = nn_sample + noise_sample   
                 gp_samples = rng.multivariate_normal( mean = np.zeros(num_data_points), cov = K, size = num_function_samples )
                 mmd_squareds[hidden_unit_index, hidden_layer_index, repeat_index] = mmd.mmd( gp_samples, nn_samples, mmd_kern )
     
-
-    
-    
+    results_file_name = results_file_stub + "_" +  width_class + ".pickle"
     results = {'hidden_unit_numbers':hidden_unit_numbers, 'hidden_layer_numbers':hidden_layer_numbers, 'num_repeats':num_repeats, 'mmd_squareds':mmd_squareds }
     pickle.dump( results, open(results_file_name,'wb') )
     
 if __name__ == '__main__':
-    mmd_experiments()
+    if len(sys.argv)!=2 or sys.argv[1] not in shared.valid_width_classes:
+        print("Usage: ", sys.argv[0], " <width_class>")
+        sys.exit(-1)
+    mmd_experiments(sys.argv[1])

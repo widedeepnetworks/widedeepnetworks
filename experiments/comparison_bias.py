@@ -1,3 +1,18 @@
+# Copyright 2018 Alexander Matthews
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import sys
 sys.path.append('../')
 import itertools
@@ -9,8 +24,6 @@ import pickle
 
 import torch
 from torch.autograd import Variable
-
-from matplotlib2tikz import save as save_tikz
 
 import gpflow
 import cProfile
@@ -67,9 +80,12 @@ def nn_experiments(X,Y,grid_points):#, fig, axes):
 
     nn_sample = shared.draw_sample_from_nn_prior(model, grid_var)
 
-    pred_mean, pred_var = shared.nn_model_regression(X_var,Y_var,grid_var, model, num_samples = 3000, burn_in = 50, epsilon = 0.1, beta = 1, leap_frog_iters = 10  )
+    nthin = 1
+    burn_in = 50
+    results_manager = shared.ResultsManager(None, burn_in, nthin, False, False, True, False, True)
+    shared.nn_model_regression(X_var,Y_var,grid_var, model, num_samples = 3000, epsilon = 0.1, beta = 1, leap_frog_iters = 10, results_manager=results_manager  )
     
-    return pred_mean, pred_var
+    return results_manager
     
 def main():
     torch.manual_seed(2)
@@ -77,9 +93,10 @@ def main():
     X,Y, grid_points = get_XY_gridpoints()
     
     gp_mean, gp_var = gp_experiments(X,Y,grid_points)#, fig, axes )
-    nn_mean, nn_var = nn_experiments(X,Y,grid_points)#, fig, axes )
+    nn_results = nn_experiments(X,Y,grid_points)#, fig, axes )
 
-    results = { 'gp_mean' : gp_mean.flatten() , 'gp_var' : gp_var.flatten() , 'nn_mean' : nn_mean.flatten(), 'nn_var' : nn_var.flatten() }
+    results = { 'gp_mean' : gp_mean.flatten() , 'gp_var' : gp_var.flatten() }
+    results.update(nn_results.to_dict())
     
     pickle.dump( results, open(results_file_name,'wb') )
     

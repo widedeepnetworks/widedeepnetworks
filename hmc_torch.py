@@ -1,3 +1,17 @@
+# Copyright 2018 Alexander Matthews
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import math
 import numpy as np
 
@@ -11,6 +25,13 @@ from copy import deepcopy
 from IPython import embed
 
 from ess_torch import NormalTestModule
+
+# Hamiltonian Monte Carlo and Hamiltonian Annealed Importance Sampling in PyTorch.
+# See MCMC using Hamiltonian dynamics by Neal 2012 for a history of HMC. 
+# https://arxiv.org/pdf/1206.1901.pdf
+# Hamiltonian Annealed Importance Sampling is discussed in slides by Neal and :
+# by Sohl-Dickstein and Culpepper 2012 
+# https://arxiv.org/abs/1205.1925
 
 class HAISACC(object):
     #Weight accumulator for Hamiltonian Annealed Importance Sampling.

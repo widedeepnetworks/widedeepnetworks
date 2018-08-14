@@ -1,3 +1,17 @@
+# Copyright 2018 Alexander Matthews
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import math
 import numpy as np
 
@@ -8,6 +22,11 @@ from torch.autograd import Variable
 import torch.nn as nn
 
 from IPython import embed
+
+#Elliptical slice sampling in PyTorch
+#Based on code by Jo Bovy https://github.com/jobovy/bovy_mcmc
+#This was in turn based on code in matlab by Iain Murray (http://homepages.inf.ed.ac.uk/imurray2/pub/10ess/elliptical_slice.m
+#The paper is by Murray, Adams and MacKay. AISTATS 2010.
 
 class ESS(Optimizer):
     #Assumes that the prior normal distribution has zero mean and unit covariance.

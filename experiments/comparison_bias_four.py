@@ -1,3 +1,17 @@
+# Copyright 2018 Alexander Matthews
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sys
 sys.path.append('../')
 import itertools
@@ -14,6 +28,8 @@ from torch.autograd import Variable
 import gpflow
 import cProfile
 
+from tqdm import tqdm
+
 from ess_torch import ESS
 from hmc_torch import HMC
 from RecursiveKernel import DeepArcCosine
@@ -24,6 +40,7 @@ from IPython import embed
 import shared
 import defaults
 
+input_file_name = 'datasets/comparison_bias_four.pickle'
 results_file_name = 'results/comparison_four.pickle'
 
 def nn_model_regression(model, X_train,Y_train, X_test, Y_test ):
@@ -49,7 +66,7 @@ def nn_model_regression(model, X_train,Y_train, X_test, Y_test ):
     energies = np.zeros(num_samples)
     
     start_time = time.time()
-    for sample_index in range(num_samples):
+    for sample_index in tqdm(range(num_samples)):
         def closure():
             sampler.zero_grad()
             pred = model( X_train )
@@ -122,26 +139,24 @@ def main():
 
     #randomly generate X and Y
     rng = np.random.RandomState(3)
-    X_train = rng.randn(num_train,num_dim)
-    X_test = rng.randn(num_test,num_dim)
+    
+    inputs = pickle.load( open(input_file_name, 'rb' ) )
+    X_train = inputs['X_train']
+    X_test = inputs['X_test']
     #create a random network.
     H = defaults.hidden_units
     num_layers = defaults.shared_depth
     D_IN = X_train.shape[1]
     D_OUT = 1
-    model = shared.get_nn_model(D_IN,H,D_OUT, num_layers)  
     
     #create torch version of inputs
     X_train_t = Variable( torch.from_numpy(X_train).type(defaults.tdtype), requires_grad=False)
     X_test_t = Variable( torch.from_numpy(X_test).type(defaults.tdtype), requires_grad=False)
     
-    #create train and test data.
-    f_train = model(X_train_t)
-    f_test = model(X_test_t)
-
+   
     #corrupt with correct level of noise.
-    Y_train = (f_train + Variable( torch.randn(*f_train.size()).type(defaults.tdtype).mul( math.sqrt(defaults.noise_variance) ) , requires_grad = False ) ).detach()
-    Y_test = (f_test + Variable( torch.randn(*f_test.size()).type(defaults.tdtype).mul( math.sqrt(defaults.noise_variance) ), requires_grad = False )).detach()
+    Y_train = inputs['Y_train']
+    Y_test = inputs['Y_test']
 
     densities_gp = gp_experiments(X_train, Y_train.data.numpy(), X_test, Y_test.data.numpy(), num_layers )
     #print('hold_out_gp ', hold_out_gp )
